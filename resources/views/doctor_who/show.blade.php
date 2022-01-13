@@ -16,12 +16,21 @@
                                 <h5 >{{ $season->season }} сезон</h5>
                                 <p>Номер доктора: {{ $season->doctorNumber }}</p>
                                 <p>Год выпуска: {{ $season->year }}</p>
-                                <a href="/doctor_who/{{ $season->id }}/edit" type="button" class="btn btn-primary">Редактировать</a>
-                                <form style="padding-top: 20px;" action="/doctor_who/{{ $season->id }}" method="POST">
-                                    @method('DELETE')
-                                    @csrf
-                                    <button type="submit" class="btn btn-danger">Удалить</button>
-                                </form>
+                                @can('update-or-delete', $season)
+                                    <a href="/doctor_who/{{ $season->id }}/edit" type="button" class="btn btn-primary">Редактировать</a>
+                                    <form style="padding-top: 20px;" action="/doctor_who/{{ $season->id }}" method="POST">
+                                        @method('DELETE')
+                                        @csrf
+                                        <button type="submit" class="btn btn-danger">Удалить</button>
+                                    </form>
+                                @endcan
+                                @can('restore-or-full-delete')
+                                    <form action="/doctor_who/{{ $season->id }}/forceDelete" method="POST">
+                                        @method('DELETE')
+                                        @csrf
+                                        <button type="submit" class="btn btn-danger">Удалить навсегда</button>
+                                    </form>
+                                @endcan
                             </div>
                         </div>
                     </div>

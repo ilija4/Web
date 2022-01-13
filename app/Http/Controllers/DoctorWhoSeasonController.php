@@ -3,37 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Models\DoctorWhoSeason;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class DoctorWhoSeasonController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response
-     */
     public function index()
     {
-        $seasons = \App\Models\DoctorWhoSeason::orderBy('season')->get();
+        $seasons = DoctorWhoSeason::orderBy('season')->get();
         return view('doctor_who.index', compact('seasons'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response
-     */
     public function create()
     {
-        return view('doctor_who.create');
+        $user_id = Auth::id();
+        if (!Gate::allows('add', $user_id)) abort(403);
+        $season = new DoctorWhoSeason();
+        $season['user_id'] = $user_id;
+        return view('doctor_who.create', compact('season'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Illuminate\Routing\Redirector
-     */
     public function store()
     {
         $data = request()->validate([
@@ -42,39 +33,23 @@ class DoctorWhoSeasonController extends Controller
             'season' => 'required|numeric|min:1',
             'doctorNumber' => 'required|numeric|min:1',
         ]);
+        $data['user_id']=Auth::id();
         DoctorWhoSeason::create($data);
-        return redirect('/');
+        return redirect('/users/' . Auth::user()->name);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\DoctorWhoSeason  $doctorWhoSeason
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response
-     */
     public function show(DoctorWhoSeason $season)
     {
-        return view('doctor_who.show', compact('season'));
+        $user = User::find($season->user_id);
+        return view('doctor_who.show', compact('season', 'user'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\DoctorWhoSeason  $doctorWhoSeason
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response
-     */
     public function edit(DoctorWhoSeason $season)
     {
+        if (!Gate::allows('update-or-delete', $season)) abort(403);
         return view('doctor_who.edit', compact('season'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\DoctorWhoSeason  $doctorWhoSeason
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Illuminate\Routing\Redirector
-     */
     public function update(DoctorWhoSeason $season)
     {
         $data =request()->validate([
@@ -83,20 +58,32 @@ class DoctorWhoSeasonController extends Controller
             'season' => 'required|numeric|min:1',
             'doctorNumber' => 'required|numeric|min:1',
         ]);
-
+        $user = Auth::user();
+        if (!Gate::allows('update-or-delete', $season)) abort(403);
         $season->update($data);
-        return redirect('/');
+        return redirect('/users/' . $user->name);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\DoctorWhoSeason  $doctorWhoSeason
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Illuminate\Routing\Redirector
-     */
     public function destroy(DoctorWhoSeason $season)
     {
+        $user = User::find($season->user_id);
+        if (!Gate::allows('update-or-delete', $season)) abort(403);
         $season->delete();
-        return redirect('/');
+        return redirect('/users/' . $user->name);
+    }
+
+    public function restore()
+    {
+        if (!Gate::allows('restore-or-full-delete')) abort(403);
+        $season = DoctorWhoSeason::withTrashed()->find(intval(request()['season']));
+        $season->restore();
+        return redirect('/users/' . Auth::user()->name);
+    }
+
+    public function forceDelete(DoctorWhoSeason $season)
+    {
+        if (!Gate::allows('update-or-delete', $season)) abort(403);
+        $season->forceDelete();
+        return redirect('/users/' . Auth::user()->name);
     }
 }

@@ -15,7 +15,7 @@ class DoctorWhoSeason extends Model
     protected $table = 'doctor_who_season';
     public $timestamps = false;
     protected $softDeletes = true;
-    protected $fillable = ['poster_url', 'season', 'year', 'doctorNumber'];
+    protected $fillable = ['poster_url', 'season', 'year', 'doctorNumber', 'user_id'];
     /**
      * @var mixed
      */
